@@ -282,44 +282,12 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { io } from "socket.io-client";
 import VideoPlayer from "./VideoPlayer";
 import "./VideoCall.css";
 
+// MUI Icons
 import CallEndIcon from "@mui/icons-material/CallEnd";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
@@ -330,22 +298,6 @@ import PhoneDisabledIcon from "@mui/icons-material/PhoneDisabled";
 
 const SOCKET_SERVER_URL = "https://vizit-backend-hubw.onrender.com";
 
-const ICE_SERVERS = {
-    iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        {
-            urls: "turn:openrelay.metered.ca:80",
-            username: "openrelayproject",
-            credential: "openrelayproject"
-        },
-        {
-            urls: "turn:openrelay.metered.ca:443",
-            username: "openrelayproject",
-            credential: "openrelayproject"
-        }
-    ]
-};
-
 const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
     const socketRef = useRef(null);
     const pcRef = useRef(null);
@@ -354,41 +306,36 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
     const [remoteStream, setRemoteStream] = useState(null);
 
     const [incomingCall, setIncomingCall] = useState(false);
-    const [caller, setCaller] = useState(null);
+    const [callerInfo, setCallerInfo] = useState(null);
     const [callActive, setCallActive] = useState(false);
 
     const [isMuted, setIsMuted] = useState(false);
     const [isVideoOff, setIsVideoOff] = useState(false);
 
-    const localUserId = localStorage.getItem("userId");
-    const localUserName = localStorage.getItem("userName") || "User";
-
-    /* ---------------- SOCKET INIT ---------------- */
+    /* -------------------- INIT SOCKET -------------------- */
     useEffect(() => {
-        const socket = io(SOCKET_SERVER_URL, { transports: ["websocket"] });
-        socketRef.current = socket;
-
-        socket.on("connect", () => {
-            socket.emit("register", localUserId);
+        socketRef.current = io(SOCKET_SERVER_URL, {
+            query: { userId: localStorage.getItem("userId") }
         });
 
-        return () => socket.disconnect();
-    }, [localUserId]);
+        return () => {
+            socketRef.current.disconnect();
+        };
+    }, []);
 
-    /* ---------------- PEER CONNECTION ---------------- */
-    const createPeerConnection = useCallback(async (targetUserId) => {
-        if (pcRef.current) return;
+    /* -------------------- PEER CONNECTION -------------------- */
+    const createPeerConnection = useCallback(async () => {
+        const pc = new RTCPeerConnection({
+            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        });
 
-        const pc = new RTCPeerConnection(ICE_SERVERS);
-        pcRef.current = pc;
-
-        const localStream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
             audio: true
         });
 
-        localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-        setMyStream(localStream);
+        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+        setMyStream(stream);
 
         const remote = new MediaStream();
         setRemoteStream(remote);
@@ -398,25 +345,25 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         };
 
         pc.onicecandidate = e => {
-            if (e.candidate) {
+            if (e.candidate && remoteUserId) {
                 socketRef.current.emit("ice-candidate", {
-                    toUserId: targetUserId,
+                    toUserId: remoteUserId,
                     candidate: e.candidate
                 });
             }
         };
-    }, []);
 
-    /* ---------------- SOCKET EVENTS ---------------- */
+        pcRef.current = pc;
+    }, [remoteUserId]);
+
+    /* -------------------- SOCKET EVENTS -------------------- */
     useEffect(() => {
         const socket = socketRef.current;
-        if (!socket) return;
 
         socket.on("incoming:call", async ({ fromUserId, offer, callerName }) => {
-            setCaller({ id: fromUserId, name: callerName });
+            setCallerInfo({ userId: fromUserId, name: callerName });
             setIncomingCall(true);
-
-            await createPeerConnection(fromUserId);
+            await createPeerConnection();
             await pcRef.current.setRemoteDescription(JSON.parse(offer));
         });
 
@@ -426,9 +373,9 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         });
 
         socket.on("ice-candidate", async ({ candidate }) => {
-            if (pcRef.current && candidate) {
+            try {
                 await pcRef.current.addIceCandidate(candidate);
-            }
+            } catch { }
         });
 
         socket.on("call:end", endCall);
@@ -441,17 +388,16 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         };
     }, [createPeerConnection]);
 
-    /* ---------------- CALL ACTIONS ---------------- */
+    /* -------------------- CALL ACTIONS -------------------- */
     const startCall = async () => {
-        await createPeerConnection(remoteUserId);
-
+        await createPeerConnection();
         const offer = await pcRef.current.createOffer();
         await pcRef.current.setLocalDescription(offer);
 
         socketRef.current.emit("user:call", {
             toUserId: remoteUserId,
             offer: JSON.stringify(offer),
-            callerName: localUserName
+            callerName: localStorage.getItem("userName") || "User"
         });
 
         setCallActive(true);
@@ -462,7 +408,7 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         await pcRef.current.setLocalDescription(answer);
 
         socketRef.current.emit("call:accepted", {
-            toUserId: caller.id,
+            toUserId: callerInfo.userId,
             answer: JSON.stringify(answer)
         });
 
@@ -471,7 +417,9 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
     };
 
     const rejectCall = () => {
-        socketRef.current.emit("call:rejected", { toUserId: caller.id });
+        socketRef.current.emit("call:rejected", {
+            toUserId: callerInfo.userId
+        });
         setIncomingCall(false);
     };
 
@@ -484,14 +432,14 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         setRemoteStream(null);
 
         socketRef.current.emit("call:end", {
-            toUserId: remoteUserId || caller?.id
+            toUserId: remoteUserId || callerInfo?.userId
         });
 
         setCallActive(false);
         setIncomingCall(false);
     };
 
-    /* ---------------- MEDIA CONTROLS ---------------- */
+    /* -------------------- CONTROLS -------------------- */
     const toggleMute = () => {
         const track = myStream?.getAudioTracks()[0];
         if (track) {
@@ -508,38 +456,48 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         }
     };
 
-    /* ---------------- UI ---------------- */
+    /* -------------------- UI -------------------- */
     return (
         <div className="video-call-container">
             {incomingCall && (
                 <div className="incoming-call-overlay">
-                    <h2>{caller?.name}</h2>
-                    <p>Incoming video call</p>
-                    <button onClick={acceptCall}><CallIcon /></button>
-                    <button onClick={rejectCall}><PhoneDisabledIcon /></button>
+                    <div className="incoming-call-modal">
+                        <h2>{callerInfo?.name}</h2>
+                        <p>Incoming video call</p>
+                        <div className="incoming-call-actions">
+                            <button className="accept-call-btn" onClick={acceptCall}>
+                                <CallIcon />
+                            </button>
+                            <button className="reject-call-btn" onClick={rejectCall}>
+                                <PhoneDisabledIcon />
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
             {callActive && (
                 <div className="video-call-interface">
-                    {remoteStream && (
-                        <VideoPlayer stream={remoteStream} name={remoteUserName} isRemote />
-                    )}
+                    <div className="remote-video-container">
+                        {remoteStream && <VideoPlayer stream={remoteStream} name={remoteUserName} />}
+                    </div>
 
-                    {myStream && (
-                        <VideoPlayer stream={myStream} name="Me" isSmall />
-                    )}
+                    <div className="local-video-container">
+                        {myStream && (
+                            <VideoPlayer stream={myStream} name={"Me"} muted isSmall />
+                        )}
+                    </div>
 
                     <div className="call-controls">
-                        <button onClick={toggleMute}>
+                        <button className="end-call-btn" style={{ background: "#918989ff" }} onClick={toggleMute}>
                             {isMuted ? <MicOffIcon /> : <MicIcon />}
                         </button>
 
-                        <button onClick={toggleVideo}>
+                        <button className="end-call-btn" style={{ background: "rgba(41, 107, 91, 1)" }} onClick={toggleVideo}>
                             {isVideoOff ? <VideocamOffIcon /> : <VideocamIcon />}
                         </button>
 
-                        <button onClick={endCall}>
+                        <button className="end-call-btn" onClick={endCall}>
                             <CallEndIcon />
                         </button>
                     </div>
@@ -549,6 +507,7 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
             {!callActive && !incomingCall && remoteUserId && (
                 <button className="start-call-btn" onClick={startCall}>
                     <ion-icon name="videocam-outline"></ion-icon>
+
                 </button>
             )}
         </div>
