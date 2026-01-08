@@ -305,27 +305,25 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
     }, []);
 
     /* -------------------- PEER CONNECTION -------------------- */
+
+
     const createPeerConnection = useCallback(async () => {
+        const res = await fetch(
+            "https://vizit-backend-hubw.onrender.com/api/video/turn-credentials"
+        );
+
+        const turnData = await res.json();
+
         const pc = new RTCPeerConnection({
             iceServers: [
-                {
-                    urls: "stun:stun.l.google.com:19302",
-                },
-                {
-                    urls: "turn:openrelay.metered.ca:443?transport=tcp",
-                    username: "openrelayproject",
-                    credential: "openrelayproject",
-                },
+                { urls: "stun:stun.l.google.com:19302" },
+                ...turnData.iceServers,
             ],
+            iceCandidatePoolSize: 10,
         });
 
-        // Log ICE connection state for debugging
-        pc.oniceconnectionstatechange = () => {
-            console.log("ICE connection state:", pc.iceConnectionState);
-        };
-
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: 1280, height: 720 },
+            video: true,
             audio: true,
         });
 
@@ -336,7 +334,9 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         setRemoteStream(remote);
 
         pc.ontrack = (event) => {
-            event.streams[0].getTracks().forEach((track) => remote.addTrack(track));
+            event.streams[0].getTracks().forEach((track) => {
+                remote.addTrack(track);
+            });
         };
 
         pc.onicecandidate = (event) => {
@@ -350,6 +350,52 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
 
         pcRef.current = pc;
     }, [remoteUserId]);
+
+    // const createPeerConnection = useCallback(async () => {
+    //     const pc = new RTCPeerConnection({
+    //         iceServers: [
+    //             {
+    //                 urls: "stun:stun.l.google.com:19302",
+    //             },
+    //             {
+    //                 urls: "turn:openrelay.metered.ca:443?transport=tcp",
+    //                 username: "openrelayproject",
+    //                 credential: "openrelayproject",
+    //             },
+    //         ],
+    //     });
+
+    //     // Log ICE connection state for debugging
+    //     pc.oniceconnectionstatechange = () => {
+    //         console.log("ICE connection state:", pc.iceConnectionState);
+    //     };
+
+    //     const stream = await navigator.mediaDevices.getUserMedia({
+    //         video: { width: 1280, height: 720 },
+    //         audio: true,
+    //     });
+
+    //     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+    //     setMyStream(stream);
+
+    //     const remote = new MediaStream();
+    //     setRemoteStream(remote);
+
+    //     pc.ontrack = (event) => {
+    //         event.streams[0].getTracks().forEach((track) => remote.addTrack(track));
+    //     };
+
+    //     pc.onicecandidate = (event) => {
+    //         if (event.candidate && remoteUserId) {
+    //             socketRef.current.emit("ice-candidate", {
+    //                 toUserId: remoteUserId,
+    //                 candidate: event.candidate,
+    //             });
+    //         }
+    //     };
+
+    //     pcRef.current = pc;
+    // }, [remoteUserId]);
 
     /* -------------------- SOCKET EVENTS -------------------- */
     useEffect(() => {
