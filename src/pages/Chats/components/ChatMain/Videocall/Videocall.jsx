@@ -296,121 +296,59 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
 
     /* -------------------- PEER CONNECTION -------------------- */
 
-    const createPeerConnection = async () => {
-        try {
-            const pc = new RTCPeerConnection({
-                iceServers: [
-                    // STUN (fast if possible)
-                    { urls: "stun:stun.l.google.com:19302" },
 
-                    // TURN (works everywhere)
-                    {
-                        urls: [
-                            "turn:openrelay.metered.ca:80",
-                            "turn:openrelay.metered.ca:443",
-                            "turn:openrelay.metered.ca:443?transport=tcp"
-                        ],
-                        username: "openrelayproject",
-                        credential: "openrelayproject",
-                    },
-                ],
-                iceCandidatePoolSize: 10,
-            });
+    const createPeerConnection = useCallback(async () => {
+        const pc = new RTCPeerConnection({
 
-            // 🔍 Debugging (IMPORTANT)
-            pc.oniceconnectionstatechange = () => {
-                console.log("ICE STATE:", pc.iceConnectionState);
-            };
+            iceServers: [{
+                urls: [
+                    "stun:stun.l.google.com:19302",
+                    "stun:global.stun.twilio.com:3478",
+                ]
+            }]
+            // iceServers: [
+            //     {
+            //         urls: "stun:stun.l.google.com:19302",
+            //     },
+            //     {
+            //         urls: "turn:openrelay.metered.ca:443?transport=tcp",
+            //         username: "openrelayproject",
+            //         credential: "openrelayproject",
+            //     },
+            // ],
+        });
 
-            pc.onconnectionstatechange = () => {
-                console.log("PEER STATE:", pc.connectionState);
-            };
+        // Log ICE connection state for debugging
+        pc.oniceconnectionstatechange = () => {
+            console.log("ICE connection state:", pc.iceConnectionState);
+        };
 
-            // 🎥 Get local media
-            const localStream = await navigator.mediaDevices.getUserMedia({
-                video: true,
-                audio: true,
-            });
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 1280, height: 720 },
+            audio: true,
+        });
 
-            localStream.getTracks().forEach((track) => {
-                pc.addTrack(track, localStream);
-            });
+        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+        setMyStream(stream);
 
-            setMyStream(localStream);
+        const remote = new MediaStream();
+        setRemoteStream(remote);
 
-            // 📺 Remote stream
-            const remoteStream = new MediaStream();
-            setRemoteStream(remoteStream);
+        pc.ontrack = (event) => {
+            event.streams[0].getTracks().forEach((track) => remote.addTrack(track));
+        };
 
-            pc.ontrack = (event) => {
-                event.streams[0].getTracks().forEach((track) => {
-                    remoteStream.addTrack(track);
+        pc.onicecandidate = (event) => {
+            if (event.candidate && remoteUserId) {
+                socketRef.current.emit("ice-candidate", {
+                    toUserId: remoteUserId,
+                    candidate: event.candidate,
                 });
-            };
+            }
+        };
 
-            // ❄ ICE candidates → signaling server
-            pc.onicecandidate = (event) => {
-                if (event.candidate && remoteUserId) {
-                    socketRef.current.emit("ice-candidate", {
-                        toUserId: remoteUserId,
-                        candidate: event.candidate,
-                    });
-                }
-            };
-
-            pcRef.current = pc;
-            return pc;
-        } catch (err) {
-            console.error("PeerConnection error:", err);
-            throw err;
-        }
-    };
-
-    // const createPeerConnection = useCallback(async () => {
-    //     const pc = new RTCPeerConnection({
-    //         iceServers: [
-    //             {
-    //                 urls: "stun:stun.l.google.com:19302",
-    //             },
-    //             {
-    //                 urls: "turn:openrelay.metered.ca:443?transport=tcp",
-    //                 username: "openrelayproject",
-    //                 credential: "openrelayproject",
-    //             },
-    //         ],
-    //     });
-
-    //     // Log ICE connection state for debugging
-    //     pc.oniceconnectionstatechange = () => {
-    //         console.log("ICE connection state:", pc.iceConnectionState);
-    //     };
-
-    //     const stream = await navigator.mediaDevices.getUserMedia({
-    //         video: { width: 1280, height: 720 },
-    //         audio: true,
-    //     });
-
-    //     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-    //     setMyStream(stream);
-
-    //     const remote = new MediaStream();
-    //     setRemoteStream(remote);
-
-    //     pc.ontrack = (event) => {
-    //         event.streams[0].getTracks().forEach((track) => remote.addTrack(track));
-    //     };
-
-    //     pc.onicecandidate = (event) => {
-    //         if (event.candidate && remoteUserId) {
-    //             socketRef.current.emit("ice-candidate", {
-    //                 toUserId: remoteUserId,
-    //                 candidate: event.candidate,
-    //             });
-    //         }
-    //     };
-
-    //     pcRef.current = pc;
-    // }, [remoteUserId]);
+        pcRef.current = pc;
+    }, [remoteUserId]);
 
     /* -------------------- SOCKET EVENTS -------------------- */
     useEffect(() => {
