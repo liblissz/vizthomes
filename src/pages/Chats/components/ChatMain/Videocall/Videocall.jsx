@@ -40,33 +40,11 @@
 //         };
 //     }, []);
 
-
-
 //     /* -------------------- PEER CONNECTION -------------------- */
 //     const createPeerConnection = useCallback(async () => {
-//         // const pc = new RTCPeerConnection({
-//         //     iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-//         // });
-
-
 //         const pc = new RTCPeerConnection({
-//             iceServers: [
-//                 { urls: "stun:stun.l.google.com:19302" },
-//                 {
-//                     urls: "turn:openrelay.metered.ca:80",
-//                     username: "openrelayproject",
-//                     credential: "openrelayproject"
-//                 },
-//                 {
-//                     urls: "turn:openrelay.metered.ca:443",
-//                     username: "openrelayproject",
-//                     credential: "openrelayproject"
-//                 }
-
-//             ]
+//             iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
 //         });
-
-
 
 //         const stream = await navigator.mediaDevices.getUserMedia({
 //             video: true,
@@ -217,34 +195,13 @@
 
 //             {callActive && (
 //                 <div className="video-call-interface">
-//                     {/* <div className="remote-video-container">
+//                     <div className="remote-video-container">
 //                         {remoteStream && <VideoPlayer stream={remoteStream} name={remoteUserName} />}
 //                     </div>
 
 //                     <div className="local-video-container">
 //                         {myStream && (
-//                             <VideoPlayer stream={myStream} name={"Me"} isSmall />
-//                         )}
-//                     </div> */}
-
-//                     <div className="remote-video-container">
-//                         {remoteStream && (
-//                             <VideoPlayer
-//                                 stream={remoteStream}
-//                                 name={remoteUserName}
-//                                 isRemote={true}
-//                             />
-//                         )}
-//                     </div>
-
-//                     <div className="local-video-container">
-//                         {myStream && (
-//                             <VideoPlayer
-//                                 stream={myStream}
-//                                 name="Me"
-//                                 isRemote={false}
-//                                 isSmall
-//                             />
+//                             <VideoPlayer stream={myStream} name={"Me"} muted isSmall />
 //                         )}
 //                     </div>
 
@@ -275,6 +232,16 @@
 // };
 
 // export default VideoCallPage;
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -315,7 +282,11 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
     /* -------------------- INIT SOCKET -------------------- */
     useEffect(() => {
         socketRef.current = io(SOCKET_SERVER_URL, {
-            query: { userId: localStorage.getItem("userId") }
+            transports: ["websocket"], // force websocket
+            secure: true,
+            reconnection: true,
+            reconnectionAttempts: 10,
+            query: { userId: localStorage.getItem("userId") },
         });
 
         return () => {
@@ -326,29 +297,43 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
     /* -------------------- PEER CONNECTION -------------------- */
     const createPeerConnection = useCallback(async () => {
         const pc = new RTCPeerConnection({
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            iceServers: [
+                {
+                    urls: "stun:stun.l.google.com:19302",
+                },
+                {
+                    urls: "turn:openrelay.metered.ca:443?transport=tcp",
+                    username: "openrelayproject",
+                    credential: "openrelayproject",
+                },
+            ],
         });
+
+        // Log ICE connection state for debugging
+        pc.oniceconnectionstatechange = () => {
+            console.log("ICE connection state:", pc.iceConnectionState);
+        };
 
         const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true
+            video: { width: 1280, height: 720 },
+            audio: true,
         });
 
-        stream.getTracks().forEach(track => pc.addTrack(track, stream));
+        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
         setMyStream(stream);
 
         const remote = new MediaStream();
         setRemoteStream(remote);
 
-        pc.ontrack = e => {
-            e.streams[0].getTracks().forEach(track => remote.addTrack(track));
+        pc.ontrack = (event) => {
+            event.streams[0].getTracks().forEach((track) => remote.addTrack(track));
         };
 
-        pc.onicecandidate = e => {
-            if (e.candidate && remoteUserId) {
+        pc.onicecandidate = (event) => {
+            if (event.candidate && remoteUserId) {
                 socketRef.current.emit("ice-candidate", {
                     toUserId: remoteUserId,
-                    candidate: e.candidate
+                    candidate: event.candidate,
                 });
             }
         };
@@ -375,7 +360,9 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         socket.on("ice-candidate", async ({ candidate }) => {
             try {
                 await pcRef.current.addIceCandidate(candidate);
-            } catch { }
+            } catch (err) {
+                console.warn("Error adding ICE candidate:", err);
+            }
         });
 
         socket.on("call:end", endCall);
@@ -397,7 +384,7 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         socketRef.current.emit("user:call", {
             toUserId: remoteUserId,
             offer: JSON.stringify(offer),
-            callerName: localStorage.getItem("userName") || "User"
+            callerName: localStorage.getItem("userName") || "User",
         });
 
         setCallActive(true);
@@ -409,7 +396,7 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
 
         socketRef.current.emit("call:accepted", {
             toUserId: callerInfo.userId,
-            answer: JSON.stringify(answer)
+            answer: JSON.stringify(answer),
         });
 
         setIncomingCall(false);
@@ -418,7 +405,7 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
 
     const rejectCall = () => {
         socketRef.current.emit("call:rejected", {
-            toUserId: callerInfo.userId
+            toUserId: callerInfo.userId,
         });
         setIncomingCall(false);
     };
@@ -427,12 +414,12 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         pcRef.current?.close();
         pcRef.current = null;
 
-        myStream?.getTracks().forEach(t => t.stop());
+        myStream?.getTracks().forEach((t) => t.stop());
         setMyStream(null);
         setRemoteStream(null);
 
         socketRef.current.emit("call:end", {
-            toUserId: remoteUserId || callerInfo?.userId
+            toUserId: remoteUserId || callerInfo?.userId,
         });
 
         setCallActive(false);
@@ -483,17 +470,23 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
                     </div>
 
                     <div className="local-video-container">
-                        {myStream && (
-                            <VideoPlayer stream={myStream} name={"Me"} muted isSmall />
-                        )}
+                        {myStream && <VideoPlayer stream={myStream} name={"Me"} muted isSmall />}
                     </div>
 
                     <div className="call-controls">
-                        <button className="end-call-btn" style={{ background: "#918989ff" }} onClick={toggleMute}>
+                        <button
+                            className="end-call-btn"
+                            style={{ background: "#918989ff" }}
+                            onClick={toggleMute}
+                        >
                             {isMuted ? <MicOffIcon /> : <MicIcon />}
                         </button>
 
-                        <button className="end-call-btn" style={{ background: "rgba(41, 107, 91, 1)" }} onClick={toggleVideo}>
+                        <button
+                            className="end-call-btn"
+                            style={{ background: "rgba(41, 107, 91, 1)" }}
+                            onClick={toggleVideo}
+                        >
                             {isVideoOff ? <VideocamOffIcon /> : <VideocamIcon />}
                         </button>
 
@@ -507,7 +500,6 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
             {!callActive && !incomingCall && remoteUserId && (
                 <button className="start-call-btn" onClick={startCall}>
                     <ion-icon name="videocam-outline"></ion-icon>
-
                 </button>
             )}
         </div>
