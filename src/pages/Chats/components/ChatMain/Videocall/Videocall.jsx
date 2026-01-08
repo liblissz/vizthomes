@@ -40,11 +40,33 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         };
     }, []);
 
+
+
     /* -------------------- PEER CONNECTION -------------------- */
     const createPeerConnection = useCallback(async () => {
+        // const pc = new RTCPeerConnection({
+        //     iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+        // });
+
+
         const pc = new RTCPeerConnection({
-            iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                {
+                    urls: "turn:openrelay.metered.ca:80",
+                    username: "openrelayproject",
+                    credential: "openrelayproject"
+                },
+                {
+                    urls: "turn:openrelay.metered.ca:443",
+                    username: "openrelayproject",
+                    credential: "openrelayproject"
+                }
+
+            ]
         });
+
+
 
         const stream = await navigator.mediaDevices.getUserMedia({
             video: true,
