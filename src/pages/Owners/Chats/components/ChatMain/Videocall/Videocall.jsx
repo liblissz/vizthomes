@@ -307,49 +307,85 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
     /* -------------------- PEER CONNECTION -------------------- */
 
 
-    const createPeerConnection = useCallback(async () => {
-        const res = await fetch(
-            "https://vizit-backend-hubw.onrender.com/api/video/turn-credentials"
-        );
+    const createPeerConnection = async () => {
+        try {
+            const pc = new RTCPeerConnection({
+                iceServers: [
+                    // STUN (fast if possible)
+                    { urls: "stun:stun.l.google.com:19302" },
 
-        const turnData = await res.json();
-
-        const pc = new RTCPeerConnection({
-            iceServers: [
-                { urls: "stun:stun.l.google.com:19302" },
-                ...turnData.iceServers,
-            ],
-            iceCandidatePoolSize: 10,
-        });
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: true,
-            audio: true,
-        });
-
-        stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-        setMyStream(stream);
-
-        const remote = new MediaStream();
-        setRemoteStream(remote);
-
-        pc.ontrack = (event) => {
-            event.streams[0].getTracks().forEach((track) => {
-                remote.addTrack(track);
+                    // TURN (works everywhere)
+                    {
+                        urls: [
+                            "turn:openrelay.metered.ca:80",
+                            "turn:openrelay.metered.ca:443",
+                            "turn:openrelay.metered.ca:443?transport=tcp"
+                        ],
+                        username: "openrelayproject",
+                        credential: "openrelayproject",
+                    },
+                ],
+                iceCandidatePoolSize: 10,
             });
-        };
 
-        pc.onicecandidate = (event) => {
-            if (event.candidate && remoteUserId) {
-                socketRef.current.emit("ice-candidate", {
-                    toUserId: remoteUserId,
-                    candidate: event.candidate,
+            // 🔍 Debugging (IMPORTANT)
+            pc.oniceconnectionstatechange = () => {
+                console.log("ICE STATE:", pc.iceConnectionState);
+            };
+
+            pc.onconnectionstatechange = () => {
+                console.log("PEER STATE:", pc.connectionState);
+            };
+
+            // 🎥 Get local media
+            const localStream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: true,
+            });
+
+            localStream.getTracks().forEach((track) => {
+                pc.addTrack(track, localStream);
+            });
+
+            setMyStream(localStream);
+
+            // 📺 Remote stream
+            const remoteStream = new MediaStream();
+            setRemoteStream(remoteStream);
+
+            pc.ontrack = (event) => {
+                event.streams[0].getTracks().forEach((track) => {
+                    remoteStream.addTrack(track);
                 });
-            }
-        };
+            };
 
-        pcRef.current = pc;
-    }, [remoteUserId]);
+            // ❄ ICE candidates → signaling server
+            pc.onicecandidate = (event) => {
+                if (event.candidate && remoteUserId) {
+                    socketRef.current.emit("ice-candidate", {
+                        toUserId: remoteUserId,
+                        candidate: event.candidate,
+                    });
+                }
+            };
+
+            pcRef.current = pc;
+            return pc;
+        } catch (err) {
+            console.error("PeerConnection error:", err);
+            throw err;
+        }
+    };
+
+
+
+
+
+
+
+
+
+
 
     // const createPeerConnection = useCallback(async () => {
     //     const pc = new RTCPeerConnection({
