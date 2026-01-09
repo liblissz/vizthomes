@@ -1,4 +1,7 @@
 
+
+
+
 // import React, { useState, useRef, useEffect, useCallback } from "react";
 // import { io } from "socket.io-client";
 // import VideoPlayer from "./VideoPlayer";
@@ -32,7 +35,11 @@
 //     /* -------------------- INIT SOCKET -------------------- */
 //     useEffect(() => {
 //         socketRef.current = io(SOCKET_SERVER_URL, {
-//             query: { userId: localStorage.getItem("userId") }
+//             transports: ["websocket"], // force websocket
+//             secure: true,
+//             reconnection: true,
+//             reconnectionAttempts: 10,
+//             query: { userId: localStorage.getItem("userId") },
 //         });
 
 //         return () => {
@@ -41,31 +48,54 @@
 //     }, []);
 
 //     /* -------------------- PEER CONNECTION -------------------- */
+
+
 //     const createPeerConnection = useCallback(async () => {
 //         const pc = new RTCPeerConnection({
-//             iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+
+//             iceServers: [{
+//                 urls: [
+//                     "stun:stun.l.google.com:19302",
+//                     "stun:global.stun.twilio.com:3478",
+//                 ]
+//             }]
+//             // iceServers: [
+//             //     {
+//             //         urls: "stun:stun.l.google.com:19302",
+//             //     },
+//             //     {
+//             //         urls: "turn:openrelay.metered.ca:443?transport=tcp",
+//             //         username: "openrelayproject",
+//             //         credential: "openrelayproject",
+//             //     },
+//             // ],
 //         });
+
+//         // Log ICE connection state for debugging
+//         pc.oniceconnectionstatechange = () => {
+//             console.log("ICE connection state:", pc.iceConnectionState);
+//         };
 
 //         const stream = await navigator.mediaDevices.getUserMedia({
-//             video: true,
-//             audio: true
+//             video: { width: 1280, height: 720 },
+//             audio: true,
 //         });
 
-//         stream.getTracks().forEach(track => pc.addTrack(track, stream));
+//         stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 //         setMyStream(stream);
 
 //         const remote = new MediaStream();
 //         setRemoteStream(remote);
 
-//         pc.ontrack = e => {
-//             e.streams[0].getTracks().forEach(track => remote.addTrack(track));
+//         pc.ontrack = (event) => {
+//             event.streams[0].getTracks().forEach((track) => remote.addTrack(track));
 //         };
 
-//         pc.onicecandidate = e => {
-//             if (e.candidate && remoteUserId) {
+//         pc.onicecandidate = (event) => {
+//             if (event.candidate && remoteUserId) {
 //                 socketRef.current.emit("ice-candidate", {
 //                     toUserId: remoteUserId,
-//                     candidate: e.candidate
+//                     candidate: event.candidate,
 //                 });
 //             }
 //         };
@@ -92,7 +122,9 @@
 //         socket.on("ice-candidate", async ({ candidate }) => {
 //             try {
 //                 await pcRef.current.addIceCandidate(candidate);
-//             } catch { }
+//             } catch (err) {
+//                 console.warn("Error adding ICE candidate:", err);
+//             }
 //         });
 
 //         socket.on("call:end", endCall);
@@ -114,7 +146,7 @@
 //         socketRef.current.emit("user:call", {
 //             toUserId: remoteUserId,
 //             offer: JSON.stringify(offer),
-//             callerName: localStorage.getItem("userName") || "User"
+//             callerName: localStorage.getItem("userName") || "User",
 //         });
 
 //         setCallActive(true);
@@ -126,7 +158,7 @@
 
 //         socketRef.current.emit("call:accepted", {
 //             toUserId: callerInfo.userId,
-//             answer: JSON.stringify(answer)
+//             answer: JSON.stringify(answer),
 //         });
 
 //         setIncomingCall(false);
@@ -135,7 +167,7 @@
 
 //     const rejectCall = () => {
 //         socketRef.current.emit("call:rejected", {
-//             toUserId: callerInfo.userId
+//             toUserId: callerInfo.userId,
 //         });
 //         setIncomingCall(false);
 //     };
@@ -144,12 +176,12 @@
 //         pcRef.current?.close();
 //         pcRef.current = null;
 
-//         myStream?.getTracks().forEach(t => t.stop());
+//         myStream?.getTracks().forEach((t) => t.stop());
 //         setMyStream(null);
 //         setRemoteStream(null);
 
 //         socketRef.current.emit("call:end", {
-//             toUserId: remoteUserId || callerInfo?.userId
+//             toUserId: remoteUserId || callerInfo?.userId,
 //         });
 
 //         setCallActive(false);
@@ -200,17 +232,23 @@
 //                     </div>
 
 //                     <div className="local-video-container">
-//                         {myStream && (
-//                             <VideoPlayer stream={myStream} name={"Me"} muted isSmall />
-//                         )}
+//                         {myStream && <VideoPlayer stream={myStream} name={"Me"} muted isSmall />}
 //                     </div>
 
 //                     <div className="call-controls">
-//                         <button className="end-call-btn" style={{ background: "#918989ff" }} onClick={toggleMute}>
+//                         <button
+//                             className="end-call-btn"
+//                             style={{ background: "#918989ff" }}
+//                             onClick={toggleMute}
+//                         >
 //                             {isMuted ? <MicOffIcon /> : <MicIcon />}
 //                         </button>
 
-//                         <button className="end-call-btn" style={{ background: "rgba(41, 107, 91, 1)" }} onClick={toggleVideo}>
+//                         <button
+//                             className="end-call-btn"
+//                             style={{ background: "rgba(41, 107, 91, 1)" }}
+//                             onClick={toggleVideo}
+//                         >
 //                             {isVideoOff ? <VideocamOffIcon /> : <VideocamIcon />}
 //                         </button>
 
@@ -224,7 +262,6 @@
 //             {!callActive && !incomingCall && remoteUserId && (
 //                 <button className="start-call-btn" onClick={startCall}>
 //                     <ion-icon name="videocam-outline"></ion-icon>
-
 //                 </button>
 //             )}
 //         </div>
@@ -232,6 +269,19 @@
 // };
 
 // export default VideoCallPage;
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -307,17 +357,6 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
     /* -------------------- PEER CONNECTION -------------------- */
 
 
-
-
-
-
-
-
-
-
-
-
-
     const createPeerConnection = useCallback(async () => {
         const pc = new RTCPeerConnection({
 
@@ -327,7 +366,6 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
                     "stun:global.stun.twilio.com:3478",
                 ]
             }]
-
             // iceServers: [
             //     {
             //         urls: "stun:stun.l.google.com:19302",
