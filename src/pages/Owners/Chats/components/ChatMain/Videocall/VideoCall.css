@@ -67,12 +67,10 @@
 
 @media (max-width: 480px) {
     .local-video-container {
-        width: 90px;
-        height: 120px;
-        bottom: 70px;
-        right: 8px;
-        border-radius: 12px;
-        border: 2px solid rgba(255, 255, 255, 0.1);
+        width: 100px;
+        height: 133px;
+        bottom: 90px;
+        right: 10px;
     }
 }
 
@@ -95,6 +93,7 @@
     height: 100%;
     object-fit: cover;
     transform: scaleX(1);
+    /* Flip for self-view? Add -1 for mirror effect if needed */
 }
 
 .video-off-placeholder {
@@ -121,24 +120,9 @@
     margin-bottom: 16px;
 }
 
-@media (max-width: 480px) {
-    .placeholder-avatar {
-        width: 60px;
-        height: 60px;
-        font-size: 24px;
-        margin-bottom: 12px;
-    }
-}
-
 .placeholder-text {
     font-size: 14px;
     opacity: 0.9;
-}
-
-@media (max-width: 480px) {
-    .placeholder-text {
-        font-size: 12px;
-    }
 }
 
 .video-overlay {
@@ -151,32 +135,16 @@
     color: white;
 }
 
-@media (max-width: 480px) {
-    .video-overlay {
-        padding: 12px;
-    }
-}
-
 .user-info {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 8px;
 }
 
 .user-name {
     font-size: 19px;
     font-weight: 500;
     color: #afdfb3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-@media (max-width: 480px) {
-    .user-name {
-        font-size: 14px;
-    }
 }
 
 .video-status {
@@ -186,14 +154,6 @@
     background: rgba(29, 28, 28, 0.5);
     color: #fff;
     border-radius: 12px;
-    white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-    .video-status {
-        font-size: 10px;
-        padding: 3px 6px;
-    }
 }
 
 /* Call Controls */
@@ -207,9 +167,8 @@
     align-items: center;
     gap: 20px;
     padding: 20px;
+    margin-bottom: 100px;
     z-index: 20;
-    width: 100%;
-    box-sizing: border-box;
 }
 
 .control-btn {
@@ -225,7 +184,6 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    flex-shrink: 0;
 }
 
 .control-btn:hover {
@@ -253,7 +211,6 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    flex-shrink: 0;
 }
 
 .end-call-btn:hover {
@@ -286,29 +243,27 @@
 
 @media (max-width: 480px) {
     .call-controls {
-        gap: 10px;
-        padding: 12px 10px;
-        bottom: 12px;
-        flex-wrap: wrap;
-        justify-content: center;
+        gap: 8px;
+        padding: 10px;
+        bottom: 15px;
     }
 
     .control-btn {
-        width: 42px;
-        height: 42px;
+        width: 44px;
+        height: 44px;
     }
 
     .control-btn svg {
-        font-size: 18px;
+        font-size: 20px;
     }
 
     .end-call-btn {
-        width: 48px;
-        height: 48px;
+        width: 52px;
+        height: 52px;
     }
 
     .end-call-btn svg {
-        font-size: 22px;
+        font-size: 24px;
     }
 }
 
@@ -321,7 +276,6 @@
     display: flex;
     justify-content: center;
     z-index: 10;
-    padding: 0 10px;
 }
 
 .ringing-status {
@@ -334,15 +288,6 @@
     border-radius: 24px;
     color: white;
     font-size: 16px;
-    white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-    .ringing-status {
-        padding: 10px 16px;
-        font-size: 13px;
-        gap: 8px;
-    }
 }
 
 .ringing-animation {
@@ -351,7 +296,6 @@
     background: #4cd964;
     border-radius: 50%;
     animation: pulse 1.5s infinite;
-    flex-shrink: 0;
 }
 
 @keyframes pulse {
@@ -381,15 +325,6 @@
     border-radius: 24px;
     color: white;
     font-size: 16px;
-    white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-    .call-duration {
-        padding: 10px 16px;
-        font-size: 13px;
-        gap: 8px;
-    }
 }
 
 .connection-status {
@@ -399,25 +334,12 @@
     background: rgba(76, 217, 100, 0.2);
     border-radius: 12px;
     color: #4cd964;
-    white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-    .connection-status {
-        font-size: 10px;
-        padding: 3px 6px;
-    }
 }
 
 /* Waiting for Remote State */
 .waiting-for-remote {
     text-align: center;
     color: white;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
 }
 
 .user-avatar {
@@ -433,26 +355,10 @@
     margin: 0 auto 20px;
 }
 
-@media (max-width: 480px) {
-    .user-avatar {
-        width: 90px;
-        height: 90px;
-        font-size: 36px;
-        margin: 0 auto 15px;
-    }
-}
-
 .connecting-text {
     font-size: 16px;
     opacity: 0.8;
     margin-top: 8px;
-}
-
-@media (max-width: 480px) {
-    .connecting-text {
-        font-size: 13px;
-        margin-top: 6px;
-    }
 }
 
 /* Start Call Button */
@@ -469,7 +375,6 @@
     font-weight: 500;
     cursor: pointer;
     transition: all 0.2s ease;
-    white-space: nowrap;
 }
 
 .start-call-btn:hover {
@@ -481,17 +386,6 @@
     font-size: 20px;
 }
 
-@media (max-width: 480px) {
-    .start-call-btn {
-        font-size: 1rem;
-        padding: 6px 12px;
-    }
-
-    .start-call-btn svg {
-        font-size: 16px;
-    }
-}
-
 /* Incoming Call Overlay */
 .incoming-call-overlay {
     position: fixed;
@@ -501,7 +395,6 @@
     align-items: center;
     justify-content: center;
     z-index: 2000;
-    padding: 20px;
 }
 
 .incoming-call-modal {
@@ -512,16 +405,8 @@
     text-align: center;
     color: white;
     max-width: 400px;
-    width: 100%;
+    width: 90%;
     animation: slideIn 0.3s ease;
-    box-sizing: border-box;
-}
-
-@media (max-width: 480px) {
-    .incoming-call-modal {
-        padding: 25px 20px;
-        border-radius: 20px;
-    }
 }
 
 @keyframes slideIn {
@@ -540,12 +425,6 @@
     margin-bottom: 40px;
 }
 
-@media (max-width: 480px) {
-    .caller-info {
-        margin-bottom: 30px;
-    }
-}
-
 .caller-avatar {
     width: 120px;
     height: 120px;
@@ -559,26 +438,10 @@
     margin: 0 auto 20px;
 }
 
-@media (max-width: 480px) {
-    .caller-avatar {
-        width: 100px;
-        height: 100px;
-        font-size: 40px;
-        margin: 0 auto 15px;
-    }
-}
-
 .incoming-call-actions {
     display: flex;
     justify-content: center;
     gap: 40px;
-    flex-wrap: wrap;
-}
-
-@media (max-width: 480px) {
-    .incoming-call-actions {
-        gap: 25px;
-    }
 }
 
 .accept-call-btn,
@@ -592,7 +455,6 @@
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    flex-shrink: 0;
 }
 
 .accept-call-btn {
@@ -622,6 +484,19 @@
 
 /* Responsive incoming call */
 @media (max-width: 480px) {
+    .incoming-call-modal {
+        padding: 30px 20px;
+    }
+
+    .caller-avatar {
+        width: 100px;
+        height: 100px;
+        font-size: 40px;
+    }
+
+    .incoming-call-actions {
+        gap: 30px;
+    }
 
     .accept-call-btn,
     .reject-call-btn {
@@ -664,17 +539,6 @@
     align-items: center;
     gap: 6px;
     z-index: 10;
-    white-space: nowrap;
-}
-
-@media (max-width: 480px) {
-    .network-status {
-        top: 15px;
-        right: 15px;
-        padding: 6px 12px;
-        font-size: 10px;
-        gap: 4px;
-    }
 }
 
 .network-status.good {
@@ -758,6 +622,8 @@
     }
 }
 
+
+
 /* Landscape mode optimization */
 @media (orientation: landscape) and (max-height: 600px) {
     .local-video-container {
@@ -770,7 +636,6 @@
     .call-controls {
         bottom: 15px;
         gap: 10px;
-        padding: 10px;
     }
 
     .control-btn {
