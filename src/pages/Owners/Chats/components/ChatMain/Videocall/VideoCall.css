@@ -17,12 +17,21 @@
     z-index: 1000;
 }
 
+@media (max-width: 600px) {
+    .remote-video-container {
+        margin: 0 auto !important;
+        height: 100% !important;
+        width: 100% !important;
+        padding: 0 auto !important;
+    }
+}
+
 /* Remote Video Container */
 .remote-video-container {
     position: relative;
     flex: 1;
     background: #1a1a1a;
-    overflow: hidden;
+    overflow: scroll;
     display: flex;
     align-items: center;
     justify-content: center;
