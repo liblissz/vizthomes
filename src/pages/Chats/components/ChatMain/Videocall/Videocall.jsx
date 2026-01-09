@@ -356,29 +356,27 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
 
     /* -------------------- PEER CONNECTION -------------------- */
 
-
     const createPeerConnection = useCallback(async () => {
         const pc = new RTCPeerConnection({
+            iceServers: [
+                // STUN servers (free and public)
+                { urls: "stun:stun.l.google.com:19302" },
 
-            iceServers: [{
-                urls: [
-                    "stun:stun.l.google.com:19302",
-                    "stun:global.stun.twilio.com:3478",
-                ]
-            }]
-            // iceServers: [
-            //     {
-            //         urls: "stun:stun.l.google.com:19302",
-            //     },
-            //     {
-            //         urls: "turn:openrelay.metered.ca:443?transport=tcp",
-            //         username: "openrelayproject",
-            //         credential: "openrelayproject",
-            //     },
-            // ],
+                // Free public TURN servers
+                {
+                    urls: "turn:openrelay.metered.ca:80",
+                    username: "openrelayproject",
+                    credential: "openrelayproject",
+                },
+                {
+                    urls: "turn:openrelay.metered.ca:443?transport=tcp",
+                    username: "openrelayproject",
+                    credential: "openrelayproject",
+                },
+            ],
+            iceTransportPolicy: "all", // Try direct then TURN
         });
 
-        // Log ICE connection state for debugging
         pc.oniceconnectionstatechange = () => {
             console.log("ICE connection state:", pc.iceConnectionState);
         };
@@ -399,12 +397,12 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
         };
 
         pc.onicecandidate = (event) => {
-            if (event.candidate && remoteUserId) {
-                socketRef.current.emit("ice-candidate", {
-                    toUserId: remoteUserId,
-                    candidate: event.candidate,
-                });
-            }
+            if (!event.candidate || !remoteUserId) return;
+
+            socketRef.current.emit("ice-candidate", {
+                toUserId: remoteUserId,
+                candidate: event.candidate,
+            });
         };
 
         pcRef.current = pc;
