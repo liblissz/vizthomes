@@ -535,12 +535,26 @@ const VideoCallPage = ({ remoteUserId, remoteUserName }) => {
             {callActive && (
                 <div className="video-call-interface">
                     <div className="remote-video-container">
-                        {remoteStream && <VideoPlayer stream={remoteStream} name={remoteUserName} />}
+                        {remoteStream && (
+                            <VideoPlayer
+                                stream={remoteStream}
+                                name={remoteUserName}
+                                isRemote={true}
+                            />
+                        )}
                     </div>
 
+
                     <div className="local-video-container">
-                        {myStream && <VideoPlayer stream={myStream} name={"Me"} muted isSmall />}
+                        {myStream && (
+                            <VideoPlayer
+                                stream={myStream}
+                                name={"Me"}
+                                isRemote={false}
+                            />
+                        )}
                     </div>
+
 
                     <div className="call-controls">
                         <button

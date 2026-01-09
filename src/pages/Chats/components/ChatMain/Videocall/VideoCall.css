@@ -1,114 +1,10 @@
-/* .call-container {
-    position: fixed;
-    inset: 0;
-    background: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-}
-
-.remote-video {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.local-video {
-    position: absolute;
-    bottom: 110px;
-    right: 20px;
-    width: 140px;
-    height: 200px;
-    object-fit: cover;
-    border-radius: 12px;
-    border: 2px solid white;
-}
-
-.call-controls {
-    position: absolute;
-    bottom: 30px;
-    display: flex;
-    gap: 20px;
-}
-
-.call-controls button {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    cursor: pointer;
-}
-
-.call-controls .end {
-    background: red;
-}
-
-.call-btn {
-    background: green;
-    padding: 14px 24px;
-    border-radius: 30px;
-    border: none;
-    color: white;
-    font-size: 18px;
-}
-
-.incoming-call {
-    text-align: center;
-}
-
-.incoming-actions {
-    display: flex;
-    gap: 40px;
-    margin-top: 30px;
-}
-
-.accept,
-.reject {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    border: none;
-    color: white;
-}
-
-.accept {
-    background: green;
-}
-
-.reject {
-    background: red;
-}
-
-
-.green {
-    font-size: 2rem !important;
-    color: #0d6e22 !important;
-} */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Video Call Container */
 .video-call-container {
     position: relative;
     width: 100%;
     height: 100%;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    overflow: hidden;
 }
 
 /* Video Call Interface */
@@ -118,7 +14,19 @@
     background: #000;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
     z-index: 1000;
+    width: 100vw;
+    height: 100vh;
+}
+
+@media (max-width: 600px) {
+    .remote-video-container {
+        margin: 0 !important;
+        height: 100% !important;
+        width: 100% !important;
+        padding: 0 !important;
+    }
 }
 
 /* Remote Video Container */
@@ -209,7 +117,7 @@
     justify-content: center;
     font-size: 32px;
     font-weight: bold;
-    margin-bottom: 16px;
+    margin-bottom: 46px;
 }
 
 .placeholder-text {
@@ -259,6 +167,8 @@
     align-items: center;
     gap: 20px;
     padding: 20px;
+    margin-bottom: 100px;
+    margin-left: -60px !important;
     z-index: 20;
 }
 
