@@ -51,6 +51,7 @@ function ChatHeader({ chat, isMobileView, onBack, onlineUsers }) {
             </div>
 
             <div className="gbp-chat-header__actions">
+                {console.log("inside id", chat?._id)}
                 <VideoCall
                     remoteUserId={chat?._id}
                     remoteUserName={chat.name}
