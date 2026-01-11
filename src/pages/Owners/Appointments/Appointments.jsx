@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../Components/Header/Header";
 import PageTitle from "../Components/PageTitle";
 import "./Appointments.css";
@@ -22,88 +22,119 @@ import ApartmentIcon from "@mui/icons-material/Apartment";
 import TodayIcon from "@mui/icons-material/Today";
 import ScheduleIcon from "@mui/icons-material/Schedule";
 import Modal from "../Components/Modal";
+import axios from "axios";
+import toast from "react-hot-toast";
 
-  export const modalMain = {
-    display: "flex",
-    flexDirection: "column",
-    // border:"solid 2px red",
-    justifyContent: "flex-start",
-    padding: "10px",
-    backgroundColor: "#fff",
-    borderRadius: "5px",
-    // overflowY: "scroll"
-  };
-  export  const inputGroupContainerStyles = {
-    width: "100%",
-    display: "flex",
-    gap: "10px",
-    alignItems: "center",
-    padding: "10px 15px",
-    border: "solid 1px #afafafff",
-    borderRadius: "5px",
-  };
-  export  const inputInContainerStyles = {
-    border: "none",
-    outline: "none",
-    accentColor:"green"
-  };
-  export const labelStyles = {
-    display: "block",
-    width: "100%",
-    padding: "10px 0",
-  };
-const sampleAppointmentData = [
-  {
-    property: "Sunnyvale Loft - Unit 4B",
-    contact: "John Doe",
-    date: "Oct 24",
-    time: "2:00 PM",
-    status: "confirmed",
-  },
-  {
-    property: "Highland Manor Estate",
-    contact: "Sarah Williams",
-    date: "Oct 25",
-    time: "10:30 AM",
-    status: "cancelled",
-  },
-  {
-    property: "Downtown Studio",
-    contact: "Michael Chen",
-    date: "Oct 26",
-    time: "4:00 PM",
-    status: "void",
-  },
-  {
-    property: "Lakeside Cabin",
-    contact: "Emily Davis",
-    date: "Oct 22",
-    time: "1:00 PM",
-    status: "void",
-  },
-  {
-    property: "Highland Manor Estate",
-    contact: "Sarah Williams",
-    date: "Oct 25",
-    time: "10:30 AM",
-    status: "cancelled",
-  },
-  {
-    property: "Downtown Studio",
-    contact: "Michael Chen",
-    date: "Oct 26",
-    time: "4:00 PM",
-    status: "void",
-  },
-  {
-    property: "Lakeside Cabin",
-    contact: "Emily Davis",
-    date: "Oct 22",
-    time: "1:00 PM",
-    status: "void",
-  },
-];
+export const modalMain = {
+  display: "flex",
+  flexDirection: "column",
+  // border:"solid 2px red",
+  justifyContent: "flex-start",
+  padding: "10px",
+  backgroundColor: "#fff",
+  borderRadius: "5px",
+  // overflowY: "scroll"
+};
+export const inputGroupContainerStyles = {
+  width: "100%",
+  display: "flex",
+  gap: "10px",
+  alignItems: "center",
+  padding: "10px 15px",
+  border: "solid 1px #afafafff",
+  borderRadius: "5px",
+};
+export const inputInContainerStyles = {
+  border: "none",
+  outline: "none",
+  accentColor: "green"
+};
+export const labelStyles = {
+  display: "block",
+  width: "100%",
+  padding: "10px 0",
+};
+
+
+
+
+
 function Appointments() {
+  //   const sampleAppointmentData = [
+  // {
+  //   property: "Sunnyvale Loft - Unit 4B",
+  //   contact: "John Doe",
+  //   date: "Oct 24",
+  //   time: "2:00 PM",
+  //   status: "confirmed",
+  // },
+  // ];
+  const [user, setuser] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  const decoding = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) {
+        console.warn("No token found")
+        setLoading(false)
+        return
+      }
+
+      const data = await axios.get(
+        `https://vizit-backend-hubw.onrender.com/api/owner/decode/token/owner`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+      if (data.status === 200) {
+        setuser(data.data.res)
+        console.log(loading ? "loading..." : user);
+
+      }
+    } catch (error) {
+      console.error("Failed to decode token:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const [sampleAppointmentData, setsampleAppointmentData] = useState([])
+
+  const [loadfetch, setloadfetch] = useState(false)
+  const fetchapointment = async () => {
+    try {
+      setloadfetch(true)
+
+      const userId = localStorage.getItem("userId")
+      const res = await axios.get(`https://vizit-backend-hubw.onrender.com/api/apointment/owner/${userId}`)
+      console.log('====================================');
+      console.log("user id oh", user?._id);
+      console.log('====================================');
+      if (res.status == 200) {
+        setsampleAppointmentData(res.data);
+        console.log('====================================');
+        console.log(sampleAppointmentData);
+        console.log('====================================');
+      }
+      // apoitments
+    } catch (error) {
+      console.log('====================================');
+      console.log(error);
+      console.log('====================================');
+    } finally {
+      setloadfetch(false)
+    }
+  }
+  useEffect(() => {
+    decoding().then(() => {
+      fetchapointment()
+    })
+  }, [])
+
+
   const [filter, setFilter] = useState([
     { title: "All Requests", active: true },
     { title: "Upcoming", active: false },
@@ -124,7 +155,7 @@ function Appointments() {
   const [appToDisplay, setAppToDisplay] = useState([]);
 
   for (let i = appToDisplay.length; i <= limit - 1; i++) {
-    if (i >= start && i < sampleAppointmentData.length) {
+    if (i >= start && i < sampleAppointmentData?.length) {
       appToDisplay.push(sampleAppointmentData[i]);
       if (i > 2) {
         setStart((prev) => prev + 1);
@@ -194,16 +225,63 @@ function Appointments() {
     }
   }
   function loadMore() {
-    if (limit <= sampleAppointmentData.length) {
+    if (limit <= sampleAppointmentData?.length) {
       setLimit((prev) => prev + 1);
     }
   }
   function AppointmentCard({ appointment }) {
     const [showRescheduleModal, setShowRescheduleModal] = useState(false);
     const [showDetailsModal, setDetailsModal] = useState(false);
+    const [loadconfirm, setloadconfirm] = useState(false)
+    const [reason, setreason] = useState()
 
-    function handleConfirmAppointment() {
-      alert("appointment confirmed ");
+    const [localDate, setLocalDate] = useState(appointment.date || "");
+    const [localTime, setLocalTime] = useState(appointment.time || "");
+
+    async function savereschedule(id) {
+      try {
+        setloadconfirm(true)
+        const res = await axios.put(`https://vizit-backend-hubw.onrender.com/api/apointment/${id}`,
+          {
+            date: localDate,
+            time: localTime,
+            reason: reason
+          }
+        )
+        if (res.status == 200) {
+          toast.success("apointment confirmed successfully")
+          fetchapointment()
+        }
+      } catch (error) {
+        console.log('====================================');
+        console.log(error);
+        toast.error(error)
+        console.log('====================================');
+      } finally {
+        setloadconfirm(false)
+      }
+    }
+
+    async function handleConfirmAppointment(id) {
+      try {
+        setloadconfirm(true)
+        const res = await axios.put(`https://vizit-backend-hubw.onrender.com/api/apointment/${id}`,
+          {
+            status: "confirmed"
+          }
+        )
+        if (res.status == 200) {
+          toast.success("apointment confirmed successfully")
+          fetchapointment()
+        }
+      } catch (error) {
+        console.log('====================================');
+        console.log(error);
+        toast.error(error)
+        console.log('====================================');
+      } finally {
+        setloadconfirm(false)
+      }
     }
 
     function handleDetailsPopup() {
@@ -211,10 +289,65 @@ function Appointments() {
     }
 
     function handleAppointmentReschedule() {
-      setShowRescheduleModal(true);
+      setShowRescheduleModal(!showRescheduleModal);
     }
+
+
+
+    if (loadfetch) {
+      return (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0,0,0,0.5)", // semi-transparent overlay
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999, // make sure it's on top of everything
+            flexDirection: "column",
+          }}
+        >
+          {/* Spinner */}
+          <div
+            style={{
+              border: "6px solid #f3f3f3", // light gray
+              borderTop: "6px solid #014631", // your primary color
+              borderRadius: "50%",
+              width: "60px",
+              height: "60px",
+              animation: "spin 1s linear infinite",
+              marginBottom: "20px",
+            }}
+          ></div>
+          {/* Loading text */}
+          <p style={{ color: "white", fontSize: "18px", fontWeight: "bold" }}>
+            Loading...
+          </p>
+
+          {/* Keyframes animation */}
+          <style>
+            {`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}
+          </style>
+        </div>
+      )
+    }
+
+
     return (
       <div className="apt-card">
+
+
+
+
         <div className="apt-card-left">
           <div className="apt-card-img-cont">
             {/* //!! Change this to insert the id of the building */}
@@ -253,36 +386,57 @@ function Appointments() {
             </h5>
             <p className="apt-date-time">
               <EventNoteIcon />
-              {appointment.date} | {appointment.time}
+              {appointment?.date} | {" "} {" "}
+              {appointment?.time}
             </p>
           </div>
         </div>
+
+
 
         <div className="apt-controls">
           {appointment.status == "void" && (
             <>
               <button
                 className="confirm-btn"
-                onClick={handleConfirmAppointment}
+                onClick={() => handleConfirmAppointment(appointment?._id)}
+                disabled={loadconfirm}
               >
-                {" "}
-                <CheckIcon /> Confirm
+                <CheckIcon /> {loadconfirm ? "processing.." : "Confirm"}
               </button>
+
+
               <button
                 className="reschedule-btn"
                 onClick={handleAppointmentReschedule}
               >
                 <EditCalendarIcon /> Reschedule
               </button>
+
               {showRescheduleModal && (
                 <Modal justification={"flex-end"}>
                   <div style={modalMain}>
                     <p>Set a new date for this appointment</p>
-                    <input type="date" style={modalInputStyles}></input>
-                    <p style={{ width: "100%" }}>Time</p>
-                    <input type="time" style={modalInputStyles}></input>
+
+                    <input
+                      type="date"
+                      value={localDate}
+                      onChange={(e) => setLocalDate(e.target.value)}
+                      style={modalInputStyles}
+                    />
+
+                    <input
+                      type="time"
+                      value={localTime}
+                      onChange={(e) => setLocalTime(e.target.value)}
+                      style={modalInputStyles}
+                    />
+
+
                     <p style={{ width: "100%" }}>Reason (max 50 words)</p>
-                    <textarea type="text" style={modalInputStyles} />
+                    <textarea type="text" value={reason}
+                      onChange={(e) => setreason(e.target.value)}
+                      style={modalInputStyles} />
                     <div
                       style={{
                         display: "flex",
@@ -295,7 +449,7 @@ function Appointments() {
                         style={{
                           backgroundColor: "#e64016ff",
                         }}
-                        onClick={() => setShowRescheduleModal(false)}
+                        onClick={() => setShowRescheduleModal(!showRescheduleModal)}
                       >
                         Cancel
                       </button>
@@ -305,11 +459,10 @@ function Appointments() {
                           animation: "smothcolor linear 10s infinite;",
                         }}
                         onClick={() => {
-                          alert("Request to save goes here");
-                          setShowRescheduleModal(false);
+                          savereschedule(appointment?._id)
                         }}
                       >
-                        Save
+                        {loadconfirm ? "loading.." : "Save"}
                       </button>
                     </div>
                   </div>
@@ -317,6 +470,8 @@ function Appointments() {
               )}
             </>
           )}
+
+
           {appointment.status == "confirmed" && (
             <>
               <button className="view-details" onClick={handleDetailsPopup}>
@@ -387,16 +542,14 @@ function Appointments() {
         <PageTitle
           title={"Your Appointments"}
           subTitle={"Manage property Viewings and seeker requests"}
-          buttonText={"Add manual appointment"}
+          // buttonText={"Add manual appointment"}
           btnFunction={handleAddNewAppointment}
         ></PageTitle>
         {newAppointmentModal && (
           <Modal justification={"flex-end"}>
-            <div style={modalMain}>
+            {/* <div style={modalMain}>
               <h3 style={{ width: "100%" }}> Add a New Appointment </h3>
               <div>
-                {/* property: "Sunnyvale Loft - Unit 4B", contact: "John Doe", date:
-                "Oct 24", time: "2:00 PM", status: "confirmed", */}
 
                 <label htmlFor="" style={labelStyles}>
                   Property
@@ -483,7 +636,7 @@ function Appointments() {
                     borderRadius: "8px",
                   }}
                   onClick={() => {
-                    alert( JSON.stringify({
+                    alert(JSON.stringify({
                       "property": nAproperty,
                       "contact": nAcontact,
                       "date": nADate,
@@ -492,13 +645,13 @@ function Appointments() {
                     }));
                     setNewAppointmentModal(false);
                     //update the state after ~_~
-                  
+
                   }}
                 >
                   Save
                 </button>
               </div>
-            </div>
+            </div> */}
           </Modal>
         )}
         <div className="appointments">
@@ -534,7 +687,10 @@ function Appointments() {
                 Load more Appointments <ExpandMoreIcon />
               </button>
             ) : (
-              <div className="nothing-found">No Appointments Found Here </div>
+              loadfetch ?
+                <div className="nothing-found">loading..</div>
+                :
+                <div className="nothing-found">No Appointments Found Here </div>
             )}
           </div>
         </div>
@@ -545,3 +701,23 @@ function Appointments() {
 }
 
 export default Appointments;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

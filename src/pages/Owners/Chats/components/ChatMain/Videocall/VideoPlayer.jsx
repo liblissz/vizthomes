@@ -1,3 +1,29 @@
+// import React, { useEffect, useRef } from 'react';
+
+// const VideoPlayer = ({ stream, name, cal }) => {
+//     const videoRef = useRef(null);
+
+//     useEffect(() => {
+//         if (videoRef.current) {
+//             videoRef.current.srcObject = stream;
+//         }
+//     }, [stream]);
+
+//     return (
+//         <div>
+//             <video
+//                 ref={videoRef}
+//                 autoPlay
+//                 playsInline
+//                 muted={name === "My Stream"}
+//                 style={{ width: "300px", borderRadius: "8px" }}
+//             />
+//             <p className="text-center">{name}</p>
+//         </div>
+//     );
+// };
+
+// export default VideoPlayer;
 
 
 import React, { useEffect, useRef } from 'react';
@@ -24,7 +50,7 @@ const VideoPlayer = ({ stream, name, isRemote = false, isVideoOff = false }) => 
                         <div className="placeholder-avatar">
                             {name?.charAt(0).toUpperCase() || 'U'}
                         </div>
-                        {/* <p className="placeholder-text">Camera is off</p> */}
+                        <p className="placeholder-text">Camera is off</p>
                     </div>
                 ) : (
                     <video
@@ -41,11 +67,11 @@ const VideoPlayer = ({ stream, name, isRemote = false, isVideoOff = false }) => 
             <div className="video-overlay">
                 <div className="user-info">
                     <span className="user-name">{name}</span>
-                    {/* {!isRemote && (
+                    {!isRemote && (
                         <span className="video-status">
                             {isVideoOff ? 'Camera off' : 'Camera on'}
                         </span>
-                    )} */}
+                    )}
                 </div>
             </div>
         </div>
